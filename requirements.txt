@@ -1,0 +1,14 @@
+streamlit
+pandas
+openpyxl
+streamlit-authenticator
+streamlit-option-menu
+matplotlib
+seaborn
+plotly
+numpy
+reportlab
+arabic-reshaper
+python-bidi
+kaleido
+fpdf2
