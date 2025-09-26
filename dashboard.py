@@ -15,8 +15,10 @@ from bidi.algorithm import get_display
 
 def reshape(text):
     return get_display(arabic_reshaper.reshape(text))
-
-rcParams['font.family'] = 'Tahoma'
+import matplotlib.font_manager as fm
+font_path = "fonts/vazir.ttf"
+font_prop = fm.FontProperties(fname=font_path)
+rcParams['font.family'] = font_prop.get_name()
 rcParams['axes.unicode_minus'] = False
 
 st.set_page_config(page_title="📊 داشبورد نورآفرین", layout="wide")
@@ -222,3 +224,4 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
