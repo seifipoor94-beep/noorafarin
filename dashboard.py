@@ -17,8 +17,13 @@ def reshape(text):
     return get_display(arabic_reshaper.reshape(text))
 import matplotlib.font_manager as fm
 font_path = "fonts/vazir.ttf"
-font_prop = fm.FontProperties(fname=font_path)
-rcParams['font.family'] = font_prop.get_name()
+font_path = "fonts/vazir.ttf"
+if os.path.exists(font_path):
+    font_prop = fm.FontProperties(fname=font_path)
+    rcParams['font.family'] = font_prop.get_name()
+else:
+    rcParams['font.family'] = 'DejaVu Sans'  # فونت پیش‌فرض امن
+
 rcParams['axes.unicode_minus'] = False
 
 st.set_page_config(page_title="📊 داشبورد نورآفرین", layout="wide")
@@ -224,4 +229,5 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
 
