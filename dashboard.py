@@ -139,7 +139,7 @@ if entered_role in ["مدیر", "معاون", "آموزگار"]:
     overall_avg = overall_avg.sort_values('رتبه')
     st.dataframe(overall_avg[['رتبه', 'نام دانش‌آموز', 'نمره']])
 # نمایش کارنامه
-# تابع تولید PDF
+# نمایش کارنامه
 def generate_pdf(student_name, scores_long, status_map, status_colors):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
@@ -156,24 +156,11 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
     c.setFont(font_name, 18)
     c.drawCentredString(width / 2, height - 50, reshape(f"کارنامه دانش‌آموز {student_name}"))
 
-    # جدول پیوسته، راست‌چین، بدون فاصله بین ستون‌ها
-    c.setFont(font_name, 14)
-    y = height - 100
-    row_height = 25
-    col_width = 100
-    start_x = 140
+    # جدول پیوسته، وسط‌چین، با عرض پویا
+    font_size = 12
     headers = ["درس", "میانگین دانش‌آموز", "میانگین کلاس", "وضعیت"]
-    num_cols = len(headers)
+    rows = []
 
-    # عنوان ستون‌ها
-    for i in range(num_cols):
-        x = start_x + i * col_width
-        c.rect(x, y, col_width, row_height, stroke=1, fill=0)
-        c.drawRightString(x + col_width - 5, y + 7, reshape(headers[i]))
-    y -= row_height
-
-    # ردیف‌های جدول
-    c.setFont(font_name, 12)
     for lesson in scores_long['درس'].unique():
         df_student = scores_long[
             (scores_long['درس'] == lesson) &
@@ -188,11 +175,38 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
         avg_class = df_class['نمره'].mean()
         status = status_map.get(int(round(avg_student)), "نامشخص")
 
-        values = [lesson, round(avg_student, 2), round(avg_class, 2), status]
-        for i in range(num_cols):
-            x = start_x + i * col_width
-            c.rect(x, y, col_width, row_height, stroke=1, fill=0)
-            c.drawRightString(x + col_width - 5, y + 7, reshape(str(values[i])))
+        row = [lesson, f"{avg_student:.2f}", f"{avg_class:.2f}", status]
+        rows.append(row)
+
+    # محاسبه عرض هر ستون
+    col_widths = []
+    for i in range(len(headers)):
+        max_width = pdfmetrics.stringWidth(reshape(headers[i]), font_name, font_size)
+        for row in rows:
+            w = pdfmetrics.stringWidth(reshape(str(row[i])), font_name, font_size)
+            max_width = max(max_width, w)
+        col_widths.append(max_width + 20)
+
+    total_width = sum(col_widths)
+    start_x = width - 50 - total_width
+    y = height - 100
+    row_height = 25
+
+    # عنوان ستون‌ها
+    c.setFont(font_name, font_size + 2)
+    for i in range(len(headers)):
+        x = start_x + sum(col_widths[:i])
+        c.rect(x, y, col_widths[i], row_height, stroke=1, fill=0)
+        c.drawCentredString(x + col_widths[i] / 2, y + 7, reshape(headers[i]))
+    y -= row_height
+
+    # ردیف‌های جدول
+    c.setFont(font_name, font_size)
+    for row in rows:
+        for i in range(len(row)):
+            x = start_x + sum(col_widths[:i])
+            c.rect(x, y, col_widths[i], row_height, stroke=1, fill=0)
+            c.drawCentredString(x + col_widths[i] / 2, y + 7, reshape(str(row[i])))
         y -= row_height
 
     # نمودار خطی روند نمرات
