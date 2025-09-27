@@ -139,6 +139,7 @@ if entered_role in ["مدیر", "معاون", "آموزگار"]:
     overall_avg = overall_avg.sort_values('رتبه')
     st.dataframe(overall_avg[['رتبه', 'نام دانش‌آموز', 'نمره']])
 # نمایش کارنامه
+# تابع تولید PDF
 def generate_pdf(student_name, scores_long, status_map, status_colors):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
@@ -155,18 +156,20 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
     c.setFont(font_name, 18)
     c.drawCentredString(width / 2, height - 50, reshape(f"کارنامه دانش‌آموز {student_name}"))
 
-    # جدول راست‌چین، کادر‌بندی‌شده، بدون فاصله
+    # جدول پیوسته، راست‌چین، بدون فاصله بین ستون‌ها
     c.setFont(font_name, 14)
     y = height - 100
     row_height = 25
-    col_width = 110
-    col_x = [500, 380, 260, 140]  # موقعیت ستون‌ها از راست به چپ
-    headers = ["وضعیت", "میانگین کلاس", "میانگین دانش‌آموز", "درس"]
+    col_width = 100
+    start_x = 140
+    headers = ["درس", "میانگین دانش‌آموز", "میانگین کلاس", "وضعیت"]
+    num_cols = len(headers)
 
     # عنوان ستون‌ها
-    for i in range(len(headers)):
-        c.rect(col_x[i], y, col_width, row_height, stroke=1, fill=0)
-        c.drawRightString(col_x[i] + col_width - 5, y + 7, reshape(headers[i]))
+    for i in range(num_cols):
+        x = start_x + i * col_width
+        c.rect(x, y, col_width, row_height, stroke=1, fill=0)
+        c.drawRightString(x + col_width - 5, y + 7, reshape(headers[i]))
     y -= row_height
 
     # ردیف‌های جدول
@@ -185,10 +188,11 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
         avg_class = df_class['نمره'].mean()
         status = status_map.get(int(round(avg_student)), "نامشخص")
 
-        values = [status, round(avg_class, 2), round(avg_student, 2), lesson]
-        for i in range(len(values)):
-            c.rect(col_x[i], y, col_width, row_height, stroke=1, fill=0)
-            c.drawRightString(col_x[i] + col_width - 5, y + 7, reshape(str(values[i])))
+        values = [lesson, round(avg_student, 2), round(avg_class, 2), status]
+        for i in range(num_cols):
+            x = start_x + i * col_width
+            c.rect(x, y, col_width, row_height, stroke=1, fill=0)
+            c.drawRightString(x + col_width - 5, y + 7, reshape(str(values[i])))
         y -= row_height
 
     # نمودار خطی روند نمرات
@@ -224,3 +228,4 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
