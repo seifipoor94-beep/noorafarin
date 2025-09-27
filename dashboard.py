@@ -14,7 +14,7 @@ import arabic_reshaper
 from bidi.algorithm import get_display
 
 def reshape(text):
-return get_display(arabic_reshaper.reshape(text))
+    return get_display(arabic_reshaper.reshape(text))
 import matplotlib.font_manager as fm
 font_path = "fonts/vazir.ttf"
 font_path = "fonts/vazir.ttf"
@@ -247,6 +247,7 @@ data=pdf_buf,
 file_name=f"کارنامه_{selected_student}.pdf",
 mime="application/pdf"
 )
+
 
 
 
