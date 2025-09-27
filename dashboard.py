@@ -140,45 +140,23 @@ if entered_role in ["مدیر", "معاون", "آموزگار"]:
 
 
 # نمایش کارنامه
-st.subheader(f"📝 کارنامه {selected_student}")
-student_overall = []
-for lesson in scores_long['درس'].unique():
-    df_lesson = scores_long[(scores_long['درس']==lesson) & (scores_long['نام دانش‌آموز']==selected_student)]
-    if df_lesson.empty: continue
-    avg_score = df_lesson['نمره'].mean()
-    status = status_map.get(int(round(avg_score)),"نامشخص")
-    student_overall.append({"درس":lesson,"میانگین":round(avg_score,2),"وضعیت":status})
-df_card = pd.DataFrame(student_overall)
-st.dataframe(df_card.style.applymap(lambda v: f"color:{status_colors[v]}" if v in status_colors else ""))
-
-# تابع تولید PDF
 def generate_pdf(student_name, scores_long, status_map, status_colors):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
+    # تنظیم فونت
     if os.path.exists("fonts/Vazir.ttf"):
         pdfmetrics.registerFont(TTFont('Vazir', 'fonts/Vazir.ttf'))
         font_name = 'Vazir'
     else:
         font_name = "Helvetica"
+
+    # عنوان اصلی
     c.setFont(font_name, 18)
-    c.drawCentredString(width/2, height-50, reshape(f"کارنامه دانش‌آموز {student_name}"))
+    c.drawCentredString(width / 2, height - 50, reshape(f"کارنامه دانش‌آموز {student_name}"))
 
-    # جدول کارنامه
-  # عنوان ستون‌ها با کادر
-c.setFont(font_name, 14)
-y = height - 100
-row_height = 25
-col_x = [50, 200, 350, 500]  # موقعیت افقی ستون‌ها
-
-headers = ["درس", "میانگین دانش‌آموز", "میانگین کلاس", "وضعیت"]
-for i in range(len(headers)):
-    c.rect(col_x[i]-5, y-5, 140, row_height, stroke=1, fill=0)
-    c.drawString(col_x[i], y, reshape(headers[i]))
-y -= row_height
-
-# ردیف‌های جدول با کادر
+    # جدول کارنامه با کادر و میانگین کلاس
     c.setFont(font_name, 14)
     y = height - 100
     row_height = 25
@@ -191,17 +169,17 @@ y -= row_height
 
     c.setFont(font_name, 12)
     for lesson in scores_long['درس'].unique():
-        df_lesson_student = scores_long[
-            (scores_long['درس'] == lesson) & 
+        df_student = scores_long[
+            (scores_long['درس'] == lesson) &
             (scores_long['نام دانش‌آموز'] == student_name)
         ]
-        df_lesson_class = scores_long[scores_long['درس'] == lesson]
+        df_class = scores_long[scores_long['درس'] == lesson]
 
-        if df_lesson_student.empty:
+        if df_student.empty:
             continue
 
-        avg_student = df_lesson_student['نمره'].mean()
-        avg_class = df_lesson_class['نمره'].mean()
+        avg_student = df_student['نمره'].mean()
+        avg_class = df_class['نمره'].mean()
         status = status_map.get(int(round(avg_student)), "نامشخص")
 
         values = [lesson, round(avg_student, 2), round(avg_class, 2), status]
@@ -210,11 +188,11 @@ y -= row_height
             c.drawString(col_x[i], y, reshape(str(values[i])))
         y -= row_height
 
-    # نمودار خطی
-    df_student = scores_long[scores_long['نام دانش‌آموز'] == student_name]
-    plt.figure(figsize=(6,3))
-    for lesson in df_student['درس'].unique():
-        df_l = df_student[df_student['درس'] == lesson]
+    # نمودار خطی روند نمرات
+    df_student_all = scores_long[scores_long['نام دانش‌آموز'] == student_name]
+    plt.figure(figsize=(6, 3))
+    for lesson in df_student_all['درس'].unique():
+        df_l = df_student_all[df_student_all['درس'] == lesson]
         plt.plot(df_l['هفته'], df_l['نمره'], marker='o', label=reshape(lesson))
     plt.title(reshape("روند نمرات دانش‌آموز"), fontsize=12)
     plt.xlabel(reshape("هفته"), fontsize=10)
@@ -225,34 +203,13 @@ y -= row_height
     plt.savefig(line_buf, format='png')
     plt.close()
     line_buf.seek(0)
-    c.drawImage(ImageReader(line_buf), 50, y-150, width=500, height=150)
-    y -= 170
-
-    # نمودار دایره‌ای
-    
+    c.drawImage(ImageReader(line_buf), 50, y - 150, width=500, height=150)
 
     # امضای پایانی
     c.setFont(font_name, 12)
-    c.drawCentredString(width/2, 40, reshape("طراحی‌شده با عشق توسط آموزگار: فاطمه سیفی‌پور 💖"))
+    c.drawCentredString(width / 2, 40, reshape("طراحی‌شده با عشق توسط آموزگار: فاطمه سیفی‌پور 💖"))
 
     c.save()
     buffer.seek(0)
     return buffer
-
-# دکمه دانلود PDF
-pdf_buf = generate_pdf(selected_student, scores_long, status_map, status_colors)
-st.download_button(
-    label="📥 دانلود کارنامه کامل با نمودارها",
-    data=pdf_buf,
-    file_name=f"کارنامه_{selected_student}.pdf",
-    mime="application/pdf"
-)
-
-
-
-
-
-
-
-
 
