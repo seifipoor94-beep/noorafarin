@@ -179,26 +179,36 @@ for i in range(len(headers)):
 y -= row_height
 
 # ردیف‌های جدول با کادر
-c.setFont(font_name, 12)
-for lesson in scores_long['درس'].unique():
-    df_lesson_student = scores_long[
-        (scores_long['درس'] == lesson) & 
-        (scores_long['نام دانش‌آموز'] == student_name)
-    ]
-    df_lesson_class = scores_long[scores_long['درس'] == lesson]
-
-    if df_lesson_student.empty:
-        continue
-
-    avg_student = df_lesson_student['نمره'].mean()
-    avg_class = df_lesson_class['نمره'].mean()
-    status = status_map.get(int(round(avg_student)), "نامشخص")
-
-    values = [lesson, round(avg_student, 2), round(avg_class, 2), status]
-    for i in range(len(values)):
-        c.rect(col_x[i]-5, y-5, 140, row_height, stroke=1, fill=0)
-        c.drawString(col_x[i], y, reshape(str(values[i])))
+    c.setFont(font_name, 14)
+    y = height - 100
+    row_height = 25
+    col_x = [50, 200, 350, 500]
+    headers = ["درس", "میانگین دانش‌آموز", "میانگین کلاس", "وضعیت"]
+    for i in range(len(headers)):
+        c.rect(col_x[i] - 5, y - 5, 140, row_height, stroke=1, fill=0)
+        c.drawString(col_x[i], y, reshape(headers[i]))
     y -= row_height
+
+    c.setFont(font_name, 12)
+    for lesson in scores_long['درس'].unique():
+        df_lesson_student = scores_long[
+            (scores_long['درس'] == lesson) & 
+            (scores_long['نام دانش‌آموز'] == student_name)
+        ]
+        df_lesson_class = scores_long[scores_long['درس'] == lesson]
+
+        if df_lesson_student.empty:
+            continue
+
+        avg_student = df_lesson_student['نمره'].mean()
+        avg_class = df_lesson_class['نمره'].mean()
+        status = status_map.get(int(round(avg_student)), "نامشخص")
+
+        values = [lesson, round(avg_student, 2), round(avg_class, 2), status]
+        for i in range(len(values)):
+            c.rect(col_x[i] - 5, y - 5, 140, row_height, stroke=1, fill=0)
+            c.drawString(col_x[i], y, reshape(str(values[i])))
+        y -= row_height
 
     # نمودار خطی
     df_student = scores_long[scores_long['نام دانش‌آموز'] == student_name]
@@ -237,6 +247,7 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
 
 
 
