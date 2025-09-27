@@ -126,18 +126,6 @@ if not student_data.empty:
 
 # رتبه‌بندی درس به درس
 
-st.subheader("🏆 رتبه‌بندی درس به درس")
-lesson_rank = lesson_data.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
-lesson_rank['رتبه'] = lesson_rank['نمره'].rank(ascending=False, method='min').astype(int)
-lesson_rank = lesson_rank.sort_values('رتبه')
-st.dataframe(lesson_rank[['رتبه','نام دانش‌آموز','نمره']])
-
-# رتبه‌بندی کلی
-st.subheader("🏅 رتبه‌بندی کلی کلاس")
-overall_avg = scores_long.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
-overall_avg['رتبه'] = overall_avg['نمره'].rank(ascending=False, method='min').astype(int)
-overall_avg = overall_avg.sort_values('رتبه')
-st.dataframe(overall_avg[['رتبه','نام دانش‌آموز','نمره']])
 
 # نمایش کارنامه
 st.subheader(f"📝 کارنامه {selected_student}")
@@ -230,6 +218,7 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
 
 
 
