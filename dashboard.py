@@ -157,15 +157,42 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
     c.drawCentredString(width / 2, height - 50, reshape(f"کارنامه دانش‌آموز {student_name}"))
 
     # جدول کارنامه با کادر و میانگین کلاس
-    c.setFont(font_name, 14)
-    y = height - 100
-    row_height = 25
-    col_x = [50, 200, 350, 500]
-    headers = ["درس", "میانگین دانش‌آموز", "میانگین کلاس", "وضعیت"]
-    for i in range(len(headers)):
-        c.rect(col_x[i] - 5, y - 5, 140, row_height, stroke=1, fill=0)
-        c.drawString(col_x[i], y, reshape(headers[i]))
+   # جدول راست‌چین، کادر‌بندی‌شده، بدون فاصله
+c.setFont(font_name, 14)
+y = height - 100
+row_height = 25
+col_width = 110
+col_x = [500, 380, 260, 140]  # موقعیت ستون‌ها از راست به چپ
+headers = ["وضعیت", "میانگین کلاس", "میانگین دانش‌آموز", "درس"]
+
+# عنوان ستون‌ها
+for i in range(len(headers)):
+    c.rect(col_x[i], y, col_width, row_height, stroke=1, fill=0)
+    c.drawRightString(col_x[i] + col_width - 5, y + 7, reshape(headers[i]))
+y -= row_height
+
+# ردیف‌های جدول
+c.setFont(font_name, 12)
+for lesson in scores_long['درس'].unique():
+    df_student = scores_long[
+        (scores_long['درس'] == lesson) &
+        (scores_long['نام دانش‌آموز'] == student_name)
+    ]
+    df_class = scores_long[scores_long['درس'] == lesson]
+
+    if df_student.empty:
+        continue
+
+    avg_student = df_student['نمره'].mean()
+    avg_class = df_class['نمره'].mean()
+    status = status_map.get(int(round(avg_student)), "نامشخص")
+
+    values = [status, round(avg_class, 2), round(avg_student, 2), lesson]
+    for i in range(len(values)):
+        c.rect(col_x[i], y, col_width, row_height, stroke=1, fill=0)
+        c.drawRightString(col_x[i] + col_width - 5, y + 7, reshape(str(values[i])))
     y -= row_height
+
 
     c.setFont(font_name, 12)
     for lesson in scores_long['درس'].unique():
@@ -220,5 +247,6 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
 
 
