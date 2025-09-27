@@ -212,4 +212,13 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
     c.save()
     buffer.seek(0)
     return buffer
+# دکمه دانلود PDF
+pdf_buf = generate_pdf(selected_student, scores_long, status_map, status_colors)
+st.download_button(
+    label="📥 دانلود کارنامه کامل با نمودار خطی",
+    data=pdf_buf,
+    file_name=f"کارنامه_{selected_student}.pdf",
+    mime="application/pdf"
+)
+
 
