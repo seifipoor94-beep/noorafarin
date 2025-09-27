@@ -166,22 +166,39 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
     c.drawCentredString(width/2, height-50, reshape(f"کارنامه دانش‌آموز {student_name}"))
 
     # جدول کارنامه
-    c.setFont(font_name, 14)
-    y = height-100
-    c.drawString(50,y, reshape("درس"))
-    c.drawString(250,y, reshape("میانگین"))
-    c.drawString(400,y, reshape("وضعیت"))
-    y -= 20
-    c.setFont(font_name, 12)
-    for lesson in scores_long['درس'].unique():
-        df_lesson = scores_long[(scores_long['درس'] == lesson) & (scores_long['نام دانش‌آموز'] == student_name)]
-        if df_lesson.empty: continue
-        avg_score = df_lesson['نمره'].mean()
-        status = status_map.get(int(round(avg_score)), "نامشخص")
-        c.drawString(50, y, reshape(lesson))
-        c.drawString(250, y, str(round(avg_score, 2)))
-        c.drawString(400, y, reshape(status))
-        y -= 20
+  # عنوان ستون‌ها با کادر
+c.setFont(font_name, 14)
+y = height - 100
+row_height = 25
+col_x = [50, 200, 350, 500]  # موقعیت افقی ستون‌ها
+
+headers = ["درس", "میانگین دانش‌آموز", "میانگین کلاس", "وضعیت"]
+for i in range(len(headers)):
+    c.rect(col_x[i]-5, y-5, 140, row_height, stroke=1, fill=0)
+    c.drawString(col_x[i], y, reshape(headers[i]))
+y -= row_height
+
+# ردیف‌های جدول با کادر
+c.setFont(font_name, 12)
+for lesson in scores_long['درس'].unique():
+    df_lesson_student = scores_long[
+        (scores_long['درس'] == lesson) & 
+        (scores_long['نام دانش‌آموز'] == student_name)
+    ]
+    df_lesson_class = scores_long[scores_long['درس'] == lesson]
+
+    if df_lesson_student.empty:
+        continue
+
+    avg_student = df_lesson_student['نمره'].mean()
+    avg_class = df_lesson_class['نمره'].mean()
+    status = status_map.get(int(round(avg_student)), "نامشخص")
+
+    values = [lesson, round(avg_student, 2), round(avg_class, 2), status]
+    for i in range(len(values)):
+        c.rect(col_x[i]-5, y-5, 140, row_height, stroke=1, fill=0)
+        c.drawString(col_x[i], y, reshape(str(values[i])))
+    y -= row_height
 
     # نمودار خطی
     df_student = scores_long[scores_long['نام دانش‌آموز'] == student_name]
@@ -202,17 +219,7 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
     y -= 170
 
     # نمودار دایره‌ای
-    class_status = df_student.groupby('درس')['نمره'].mean().round().astype(int).map(status_map)
-    status_counts = class_status.value_counts()
-    plt.figure(figsize=(5,3))
-    plt.pie(status_counts, labels=[reshape(label) for label in status_counts.index], autopct='%1.1f%%',
-            colors=['red','orange','blue','green'])
-    plt.title(reshape("وضعیت کیفی کلاس"), fontsize=12)
-    pie_buf = BytesIO()
-    plt.savefig(pie_buf, format='png')
-    plt.close()
-    pie_buf.seek(0)
-    c.drawImage(ImageReader(pie_buf), 50, y-150, width=300, height=150)
+    
 
     # امضای پایانی
     c.setFont(font_name, 12)
@@ -230,6 +237,7 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
 
 
 
