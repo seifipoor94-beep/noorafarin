@@ -125,39 +125,31 @@ if not student_data.empty:
     st.plotly_chart(fig_line, use_container_width=True)
 
 # رتبه‌بندی درس به درس
-# فرض بر اینه که role و selected_student از فرم ورود مقدار گرفته‌اند
 
-# 🎓 نمایش کارنامه برای همه نقش‌ها
+st.subheader("🏆 رتبه‌بندی درس به درس")
+lesson_rank = lesson_data.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
+lesson_rank['رتبه'] = lesson_rank['نمره'].rank(ascending=False, method='min').astype(int)
+lesson_rank = lesson_rank.sort_values('رتبه')
+st.dataframe(lesson_rank[['رتبه','نام دانش‌آموز','نمره']])
+
+# رتبه‌بندی کلی
+st.subheader("🏅 رتبه‌بندی کلی کلاس")
+overall_avg = scores_long.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
+overall_avg['رتبه'] = overall_avg['نمره'].rank(ascending=False, method='min').astype(int)
+overall_avg = overall_avg.sort_values('رتبه')
+st.dataframe(overall_avg[['رتبه','نام دانش‌آموز','نمره']])
+
+# نمایش کارنامه
 st.subheader(f"📝 کارنامه {selected_student}")
 student_overall = []
 for lesson in scores_long['درس'].unique():
-    df_lesson = scores_long[(scores_long['درس'] == lesson) & (scores_long['نام دانش‌آموز'] == selected_student)]
-    if df_lesson.empty:
-        continue
+    df_lesson = scores_long[(scores_long['درس']==lesson) & (scores_long['نام دانش‌آموز']==selected_student)]
+    if df_lesson.empty: continue
     avg_score = df_lesson['نمره'].mean()
-    status = status_map.get(int(round(avg_score)), "نامشخص")
-    student_overall.append({
-        "درس": lesson,
-        "میانگین": round(avg_score, 2),
-        "وضعیت": status
-    })
-
+    status = status_map.get(int(round(avg_score)),"نامشخص")
+    student_overall.append({"درس":lesson,"میانگین":round(avg_score,2),"وضعیت":status})
 df_card = pd.DataFrame(student_overall)
 st.dataframe(df_card.style.applymap(lambda v: f"color:{status_colors[v]}" if v in status_colors else ""))
-
-# 🏆 رتبه‌بندی فقط برای نقش‌های مجاز
-if role in ["مدیر", "معاون", "آموزگار"]:
-    st.subheader("🏆 رتبه‌بندی درس به درس")
-    lesson_rank = lesson_data.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
-    lesson_rank['رتبه'] = lesson_rank['نمره'].rank(ascending=False, method='min').astype(int)
-    lesson_rank = lesson_rank.sort_values('رتبه')
-    st.dataframe(lesson_rank[['رتبه', 'نام دانش‌آموز', 'نمره']])
-
-    st.subheader("🏅 رتبه‌بندی کلی کلاس")
-    overall_avg = scores_long.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
-    overall_avg['رتبه'] = overall_avg['نمره'].rank(ascending=False, method='min').astype(int)
-    overall_avg = overall_avg.sort_values('رتبه')
-    st.dataframe(overall_avg[['رتبه', 'نام دانش‌آموز', 'نمره']])
 
 # تابع تولید PDF
 def generate_pdf(student_name, scores_long, status_map, status_colors):
