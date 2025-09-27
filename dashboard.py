@@ -125,6 +125,7 @@ if not student_data.empty:
     st.plotly_chart(fig_line, use_container_width=True)
 
 # رتبه‌بندی درس به درس
+if role in ["مدیر", "معاون", "آموزگار"]:
 st.subheader("🏆 رتبه‌بندی درس به درس")
 lesson_rank = lesson_data.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
 lesson_rank['رتبه'] = lesson_rank['نمره'].rank(ascending=False, method='min').astype(int)
@@ -229,5 +230,6 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
 
 
