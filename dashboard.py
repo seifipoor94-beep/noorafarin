@@ -1,3 +1,4 @@
+from notes import show_notes_for_parent, send_note
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -79,6 +80,12 @@ if valid_user.empty:
     st.stop()
 user_name = valid_user.iloc[0]["نام کاربر"]
 st.success(f"✅ خوش آمدید {user_name} عزیز! شما به‌عنوان {entered_role} وارد شده‌اید.")
+if entered_role in ["آموزگار", "معاون", "مدیر"]:
+    st.subheader("✍️ ثبت یادداشت برای والد دانش‌آموز")
+    note_text = st.text_area("متن یادداشت برای والد:")
+    if st.button("📤 ارسال یادداشت به والد"):
+        send_note(user_name, entered_role, selected_student, "والد", note_text)
+        st.success("یادداشت برای والد ثبت شد ✅")
 
 # انتخاب درس و دانش‌آموز
 if entered_role == "والد":
@@ -124,6 +131,13 @@ if not student_data.empty:
     )
     fig_line.update_traces(line_color='orange')
     st.plotly_chart(fig_line, use_container_width=True)
+show_notes_for_parent(user_name)
+
+st.subheader("✉️ ارسال یادداشت برای آموزگار")
+note_text = st.text_area("متن یادداشت:")
+if st.button("📤 ارسال یادداشت به آموزگار"):
+    send_note(user_name, "والد", selected_student, "آموزگار", note_text)
+    st.success("یادداشت با موفقیت ارسال شد 💌")
 
 # رتبه‌بندی درس به درس
 if entered_role in ["مدیر", "معاون", "آموزگار"]:
@@ -242,4 +256,3 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
-
