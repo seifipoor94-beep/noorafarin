@@ -34,7 +34,7 @@ st.title("📊 درس‌بان | گزارش نمرات و وضعیت دانش‌
 st.image(
     "https://copilot.microsoft.com/th/id/BCO.fe2284b6-0e75-4a1d-8d3e-917ff48f283b.png",
     caption="📚 خوش آمدید به درس‌بان | همراهی هوشمند برای آموزگاران، با عشق از فاطمه سیفی‌پور 💖",
-    use_column_width=True
+   use_container_width=True
 )
 
 # ورود کاربر
@@ -251,3 +251,4 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
