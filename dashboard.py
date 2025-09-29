@@ -125,7 +125,6 @@ if not student_data.empty:
     )
     fig_line.update_traces(line_color='orange')
     st.plotly_chart(fig_line, use_container_width=True)
-show_notes_for_parent(user_name)
 
 # رتبه‌بندی درس به درس
 if entered_role in ["مدیر", "معاون", "آموزگار"]:
@@ -244,4 +243,5 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
 
