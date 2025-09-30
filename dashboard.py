@@ -28,35 +28,43 @@ rcParams['axes.unicode_minus'] = False
 
 # تنظیم صفحه
 st.set_page_config(page_title="📊 درس‌بان | داشبورد تحلیلی کلاس", layout="wide")
-st.title("📊 درس‌بان | گزارش نمرات و وضعیت دانش‌آموزان")
 
-# تصویر خوش‌آمدگویی
-st.image(
-    "https://copilot.microsoft.com/th/id/BCO.4a841959-901a-4011-8a27-ee2d06c74fd7.png",
-    caption="📈 مسیر رشد دانش‌آموزان با همراهی درس‌بان | طراحی فانتزی از فاطمه سیفی‌پور 💖",
-    use_container_width=True
-)
-
-# ورود کاربر
+# ورود کاربر با کنترل وضعیت
 st.sidebar.title("🔐 ورود به درس‌بان")
 entered_role = st.sidebar.selectbox("نقش خود را انتخاب کنید:", ["والد", "آموزگار", "معاون", "مدیر"])
 entered_code = st.sidebar.text_input("رمز ورود:", type="password")
+login_button = st.sidebar.button("✅ ورود")
 
-if not os.path.exists("data/users.xlsx"):
-    st.error("❌ فایل کاربران یافت نشد.")
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if login_button:
+    if not os.path.exists("data/users.xlsx"):
+        st.error("❌ فایل کاربران یافت نشد.")
+        st.stop()
+    users_df = pd.read_excel("data/users.xlsx")
+    users_df.columns = users_df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
+    valid_user = users_df[(users_df["نقش"] == entered_role) & (users_df["رمز ورود"] == entered_code)]
+    if not valid_user.empty:
+        st.session_state.logged_in = True
+        st.session_state.user_info = valid_user.iloc[0].to_dict()
+    else:
+        st.warning("❌ رمز یا نقش اشتباه است.")
+
+if not st.session_state.logged_in:
+    st.image(
+        "https://copilot.microsoft.com/th/id/BCO.4a841959-901a-4011-8a27-ee2d06c74fd7.png",
+        caption="📈 مسیر رشد دانش‌آموزان با همراهی درس‌بان | طراحی فانتزی از فاطمه سیفی‌پور 💖",
+        use_container_width=True
+    )
     st.stop()
 
-users_df = pd.read_excel("data/users.xlsx")
-users_df.columns = users_df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
-valid_user = users_df[(users_df["نقش"] == entered_role) & (users_df["رمز ورود"] == entered_code)]
-
-if valid_user.empty:
-    st.warning("❌ رمز یا نقش اشتباه است.")
-    st.stop()
-
-user_name = valid_user.iloc[0]["نام کاربر"]
-st.success(f"✅ خوش آمدید {user_name} عزیز! شما به‌عنوان {entered_role} وارد درس‌بان شده‌اید.")
-# آپلود فایل نمرات توسط آموزگار
+# اطلاعات کاربر واردشده
+user_info = st.session_state.user_info
+entered_role = user_info["نقش"]
+user_name = user_info["نام کاربر"]
+school_name = user_info.get("مدرسه", "")
+# بارگذاری فایل نمرات بر اساس نقش کاربر
 if entered_role == "آموزگار":
     st.subheader("📤 لطفاً فایل نمرات کلاس خود را آپلود کنید")
     uploaded_file = st.file_uploader("فایل اکسل نمرات:", type=["xlsx"])
@@ -64,40 +72,57 @@ if entered_role == "آموزگار":
         st.warning("لطفاً فایل نمرات را آپلود کنید تا داشبورد فعال شود.")
         st.stop()
     xls = pd.ExcelFile(uploaded_file)
-else:
-    # برای نقش‌های دیگر، فایل ثابت استفاده می‌شود
-    if not os.path.exists("data/nomarat_darsi.xlsx"):
-        st.error("❌ فایل نمرات یافت نشد.")
+
+elif entered_role == "والد":
+    teacher_name = user_info["آموزگار مربوطه"]
+    teacher_file = f"data/nomarat_{teacher_name}.csv"
+    if not os.path.exists(teacher_file):
+        st.error("❌ فایل نمرات آموزگار مربوطه یافت نشد.")
         st.stop()
-    xls = pd.ExcelFile("data/nomarat_darsi.xlsx")
+    scores_long = pd.read_csv(teacher_file)
 
-# پردازش همه شیت‌ها
-all_data = []
-for sheet_name in xls.sheet_names:
-    df = pd.read_excel(xls, sheet_name=sheet_name)
-    df.columns = df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
-    if 'نام دانش آموز' in df.columns:
-        df.rename(columns={'نام دانش آموز':'نام دانش‌آموز'}, inplace=True)
-    elif 'نام دانش‌آموز' not in df.columns:
-        continue
-    rename_map = {}
-    for col in df.columns:
-        if "هفته" in col:
-            if "اول" in col: rename_map[col] = "هفته اول"
-            elif "دوم" in col: rename_map[col] = "هفته دوم"
-            elif "سوم" in col: rename_map[col] = "هفته سوم"
-            elif "چهارم" in col: rename_map[col] = "هفته چهارم"
-    df.rename(columns=rename_map, inplace=True)
-    score_columns = [col for col in df.columns if col != 'نام دانش‌آموز']
-    df_long = df.melt(id_vars=['نام دانش‌آموز'], value_vars=score_columns,
-                      var_name='هفته', value_name='نمره')
-    df_long['نمره'] = pd.to_numeric(df_long['نمره'], errors='coerce')
-    df_long = df_long.dropna(subset=['نمره'])
-    df_long['نمره'] = df_long['نمره'].astype(int)
-    df_long['درس'] = sheet_name
-    all_data.append(df_long)
+elif entered_role in ["مدیر", "معاون"]:
+    teacher_list = users_df[
+        (users_df["نقش"] == "آموزگار") &
+        (users_df["مدرسه"] == school_name)
+    ]["نام کاربر"].tolist()
 
-scores_long = pd.concat(all_data, ignore_index=True)
+    selected_teacher = st.selectbox("👩‍🏫 انتخاب آموزگار مدرسه:", teacher_list)
+    teacher_file = f"data/nomarat_{selected_teacher}.csv"
+    if not os.path.exists(teacher_file):
+        st.error("❌ فایل نمرات این آموزگار یافت نشد.")
+        st.stop()
+    scores_long = pd.read_csv(teacher_file)
+# پردازش همه شیت‌ها (فقط برای آموزگار)
+if entered_role == "آموزگار":
+    all_data = []
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name)
+        df.columns = df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
+        if 'نام دانش آموز' in df.columns:
+            df.rename(columns={'نام دانش آموز':'نام دانش‌آموز'}, inplace=True)
+        elif 'نام دانش‌آموز' not in df.columns:
+            continue
+        rename_map = {}
+        for col in df.columns:
+            if "هفته" in col:
+                if "اول" in col: rename_map[col] = "هفته اول"
+                elif "دوم" in col: rename_map[col] = "هفته دوم"
+                elif "سوم" in col: rename_map[col] = "هفته سوم"
+                elif "چهارم" in col: rename_map[col] = "هفته چهارم"
+        df.rename(columns=rename_map, inplace=True)
+        score_columns = [col for col in df.columns if col != 'نام دانش‌آموز']
+        df_long = df.melt(id_vars=['نام دانش‌آموز'], value_vars=score_columns,
+                          var_name='هفته', value_name='نمره')
+        df_long['نمره'] = pd.to_numeric(df_long['نمره'], errors='coerce')
+        df_long = df_long.dropna(subset=['نمره'])
+        df_long['نمره'] = df_long['نمره'].astype(int)
+        df_long['درس'] = sheet_name
+        all_data.append(df_long)
+
+    scores_long = pd.concat(all_data, ignore_index=True)
+    # ذخیره‌سازی فایل نمرات آموزگار
+    scores_long.to_csv(f"data/nomarat_{user_name}.csv", index=False)
 # انتخاب درس و دانش‌آموز
 lessons = scores_long['درس'].unique()
 selected_lesson = st.selectbox("درس مورد نظر را انتخاب کنید:", lessons)
@@ -110,6 +135,7 @@ else:
     selected_student = st.selectbox("دانش‌آموز را انتخاب کنید:", students)
 
 student_data = lesson_data[lesson_data['نام دانش‌آموز'] == selected_student]
+
 # وضعیت کیفی
 status_map = {1: "نیاز به تلاش بیشتر", 2: "قابل قبول", 3: "خوب", 4: "خیلی خوب"}
 status_colors = {
@@ -251,5 +277,3 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
-
-
