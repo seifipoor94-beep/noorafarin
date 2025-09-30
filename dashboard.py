@@ -48,6 +48,7 @@ if login_button:
     if not valid_user.empty:
         st.session_state.logged_in = True
         st.session_state.user_info = valid_user.iloc[0].to_dict()
+        st.session_state.users_df = users_df  # ✅ ذخیره فایل کاربران برای استفاده بعدی
     else:
         st.warning("❌ رمز یا نقش اشتباه است.")
 
@@ -64,6 +65,10 @@ user_info = st.session_state.user_info
 entered_role = user_info["نقش"]
 user_name = user_info["نام کاربر"]
 school_name = user_info.get("مدرسه", "")
+users_df = st.session_state.users_df  # ✅ بازیابی فایل کاربران برای ادامهٔ پردازش
+# بازیابی فایل کاربران از session_state
+users_df = st.session_state.users_df
+
 # بارگذاری فایل نمرات بر اساس نقش کاربر
 if entered_role == "آموزگار":
     st.subheader("📤 لطفاً فایل نمرات کلاس خود را آپلود کنید")
@@ -93,7 +98,7 @@ elif entered_role in ["مدیر", "معاون"]:
         st.error("❌ فایل نمرات این آموزگار یافت نشد.")
         st.stop()
     scores_long = pd.read_csv(teacher_file)
-# پردازش همه شیت‌ها (فقط برای آموزگار)
+# پردازش فایل اکسل فقط برای آموزگار
 if entered_role == "آموزگار":
     all_data = []
     for sheet_name in xls.sheet_names:
