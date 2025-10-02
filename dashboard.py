@@ -17,7 +17,7 @@ import matplotlib.font_manager as fm
 def reshape(text):
     return get_display(arabic_reshaper.reshape(text))
 
-# تنظیم فونت فارسی
+# تنظیم فونت فارسی برای نمودارها
 font_path = "fonts/vazir.ttf"
 if os.path.exists(font_path):
     font_prop = fm.FontProperties(fname=font_path)
@@ -25,11 +25,10 @@ if os.path.exists(font_path):
 else:
     rcParams['font.family'] = 'DejaVu Sans'
 rcParams['axes.unicode_minus'] = False
-
 # تنظیم صفحه
 st.set_page_config(page_title="📊 درس‌بان | داشبورد تحلیلی کلاس", layout="wide")
 
-# ورود کاربر با کنترل وضعیت
+# ورود کاربر
 st.sidebar.title("🔐 ورود به درس‌بان")
 entered_role = st.sidebar.selectbox("نقش خود را انتخاب کنید:", ["والد", "آموزگار", "معاون", "مدیر"])
 entered_code = st.sidebar.text_input("رمز ورود:", type="password")
@@ -42,48 +41,99 @@ if login_button:
     if not os.path.exists("data/users.xlsx"):
         st.error("❌ فایل کاربران یافت نشد.")
         st.stop()
+
     users_df = pd.read_excel("data/users.xlsx")
     users_df.columns = users_df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
     valid_user = users_df[(users_df["نقش"] == entered_role) & (users_df["رمز ورود"] == entered_code)]
+
     if not valid_user.empty:
         st.session_state.logged_in = True
         st.session_state.user_info = valid_user.iloc[0].to_dict()
-        st.session_state.users_df = users_df  # ✅ ذخیره فایل کاربران برای استفاده بعدی
+        st.session_state.users_df = users_df
     else:
         st.warning("❌ رمز یا نقش اشتباه است.")
 
 if not st.session_state.logged_in:
     st.image(
         "https://copilot.microsoft.com/th/id/BCO.4a841959-901a-4011-8a27-ee2d06c74fd7.png",
-        caption="📈 مسیر رشد دانش‌آموزان با همراهی درس‌بان |طراحی شده توسط فاطمه سیفی‌پور 💖",
+        caption="📈 مسیر رشد دانش‌آموزان با همراهی درس‌بان | طراحی شده توسط فاطمه سیفی‌پور",
         use_container_width=True
     )
     st.stop()
-
 # اطلاعات کاربر واردشده
 user_info = st.session_state.user_info
 entered_role = user_info["نقش"]
 user_name = user_info["نام کاربر"]
 school_name = user_info.get("مدرسه", "")
-users_df = st.session_state.users_df  # ✅ بازیابی فایل کاربران برای ادامهٔ پردازش
-# بازیابی فایل کاربران از session_state
 users_df = st.session_state.users_df
 
-# بارگذاری فایل نمرات بر اساس نقش کاربر
+# بارگذاری نمرات بر اساس نقش
 if entered_role == "آموزگار":
-    st.subheader("📤 لطفاً فایل نمرات کلاس خود را آپلود کنید")
-    uploaded_file = st.file_uploader("فایل اکسل نمرات:", type=["xlsx"])
-    if uploaded_file is None:
-        st.warning("لطفاً فایل نمرات را آپلود کنید تا داشبورد فعال شود.")
-        st.stop()
-    xls = pd.ExcelFile(uploaded_file)
+    st.subheader("📊 نمرات ذخیره‌شدهٔ کلاس شما")
+
+    previous_file = f"data/nomarat_{user_name}.csv"
+    if os.path.exists(previous_file):
+        scores_long = pd.read_csv(previous_file)
+        st.success("✅ فایل نمرات قبلی با موفقیت بارگذاری شد.")
+    else:
+        st.warning("⚠️ تاکنون هیچ فایل نمره‌ای برای شما ذخیره نشده است.")
+        scores_long = pd.DataFrame()
+
+    with st.expander("📤 بروزرسانی نمرات کلاس"):
+        uploaded_file = st.file_uploader("فایل اکسل جدید برای بروزرسانی نمرات:", type=["xlsx"])
+        if uploaded_file is not None:
+            xls = pd.ExcelFile(uploaded_file)
+            all_data = []
+
+            for sheet_name in xls.sheet_names:
+                df = pd.read_excel(xls, sheet_name=sheet_name)
+                df.columns = df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
+
+                if 'نام دانش آموز' in df.columns:
+                    df.rename(columns={'نام دانش آموز':'نام دانش‌آموز'}, inplace=True)
+                elif 'نام دانش‌آموز' not in df.columns:
+                    continue
+
+                rename_map = {}
+                for col in df.columns:
+                    if "هفته" in col:
+                        if "اول" in col: rename_map[col] = "هفته اول"
+                        elif "دوم" in col: rename_map[col] = "هفته دوم"
+                        elif "سوم" in col: rename_map[col] = "هفته سوم"
+                        elif "چهارم" in col: rename_map[col] = "هفته چهارم"
+
+                df.rename(columns=rename_map, inplace=True)
+
+                score_columns = [col for col in df.columns if col != 'نام دانش‌آموز']
+                df_long = df.melt(id_vars=['نام دانش‌آموز'], value_vars=score_columns,
+                                  var_name='هفته', value_name='نمره')
+
+                df_long['نمره'] = pd.to_numeric(df_long['نمره'], errors='coerce')
+                df_long = df_long.dropna(subset=['نمره'])
+                df_long['نمره'] = df_long['نمره'].astype(int)
+                df_long['درس'] = sheet_name
+
+                all_data.append(df_long)
+
+            new_scores = pd.concat(all_data, ignore_index=True)
+
+            if not scores_long.empty:
+                scores_long = pd.concat([scores_long, new_scores], ignore_index=True)
+                scores_long.drop_duplicates(subset=["نام دانش‌آموز", "درس", "هفته"], keep="last", inplace=True)
+            else:
+                scores_long = new_scores
+
+            scores_long.to_csv(previous_file, index=False)
+            st.success("✅ نمرات جدید با موفقیت ذخیره و جایگزین شدند.")
 
 elif entered_role == "والد":
     teacher_name = user_info["آموزگار مربوطه"]
     teacher_file = f"data/nomarat_{teacher_name}.csv"
+
     if not os.path.exists(teacher_file):
         st.error("❌ فایل نمرات آموزگار مربوطه یافت نشد.")
         st.stop()
+
     scores_long = pd.read_csv(teacher_file)
 
 elif entered_role in ["مدیر", "معاون"]:
@@ -94,50 +144,23 @@ elif entered_role in ["مدیر", "معاون"]:
 
     selected_teacher = st.selectbox("👩‍🏫 انتخاب آموزگار مدرسه:", teacher_list)
     teacher_file = f"data/nomarat_{selected_teacher}.csv"
+
     if not os.path.exists(teacher_file):
         st.error("❌ فایل نمرات این آموزگار یافت نشد.")
         st.stop()
-    scores_long = pd.read_csv(teacher_file)
-# پردازش فایل اکسل فقط برای آموزگار
-if entered_role == "آموزگار":
-    all_data = []
-    for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name)
-        df.columns = df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
-        if 'نام دانش آموز' in df.columns:
-            df.rename(columns={'نام دانش آموز':'نام دانش‌آموز'}, inplace=True)
-        elif 'نام دانش‌آموز' not in df.columns:
-            continue
-        rename_map = {}
-        for col in df.columns:
-            if "هفته" in col:
-                if "اول" in col: rename_map[col] = "هفته اول"
-                elif "دوم" in col: rename_map[col] = "هفته دوم"
-                elif "سوم" in col: rename_map[col] = "هفته سوم"
-                elif "چهارم" in col: rename_map[col] = "هفته چهارم"
-        df.rename(columns=rename_map, inplace=True)
-        score_columns = [col for col in df.columns if col != 'نام دانش‌آموز']
-        df_long = df.melt(id_vars=['نام دانش‌آموز'], value_vars=score_columns,
-                          var_name='هفته', value_name='نمره')
-        df_long['نمره'] = pd.to_numeric(df_long['نمره'], errors='coerce')
-        df_long = df_long.dropna(subset=['نمره'])
-        df_long['نمره'] = df_long['نمره'].astype(int)
-        df_long['درس'] = sheet_name
-        all_data.append(df_long)
 
-    scores_long = pd.concat(all_data, ignore_index=True)
-    # ذخیره‌سازی فایل نمرات آموزگار
-    scores_long.to_csv(f"data/nomarat_{user_name}.csv", index=False)
+    scores_long = pd.read_csv(teacher_file)
 # انتخاب درس و دانش‌آموز
 lessons = scores_long['درس'].unique()
-selected_lesson = st.selectbox("درس مورد نظر را انتخاب کنید:", lessons)
+selected_lesson = st.selectbox("📚 درس مورد نظر را انتخاب کنید:", lessons)
+
 lesson_data = scores_long[scores_long['درس'] == selected_lesson]
 
 if entered_role == "والد":
     selected_student = user_name
 else:
     students = lesson_data['نام دانش‌آموز'].unique()
-    selected_student = st.selectbox("دانش‌آموز را انتخاب کنید:", students)
+    selected_student = st.selectbox("👤 دانش‌آموز را انتخاب کنید:", students)
 
 student_data = lesson_data[lesson_data['نام دانش‌آموز'] == selected_student]
 
@@ -150,10 +173,12 @@ status_colors = {
     "خیلی خوب": "green"
 }
 
-# نمودار کیفی کلاس
+# نمودار دایره‌ای وضعیت کیفی کلاس
 st.subheader("🍩 نمودار وضعیت کیفی کلاس")
+
 student_avg = lesson_data.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
 student_avg['وضعیت'] = student_avg['نمره'].round().astype(int).map(status_map)
+
 fig_pie = px.pie(
     student_avg,
     names='وضعیت',
@@ -163,8 +188,9 @@ fig_pie = px.pie(
 )
 st.plotly_chart(fig_pie, use_container_width=True)
 
-# نمودار خطی دانش‌آموز
+# نمودار خطی روند نمرات دانش‌آموز
 st.subheader(f"📈 روند نمرات {selected_student}")
+
 if not student_data.empty:
     fig_line = px.line(
         student_data,
@@ -179,30 +205,37 @@ if not student_data.empty:
 # رتبه‌بندی درس به درس
 if entered_role in ["مدیر", "معاون", "آموزگار"]:
     st.subheader("🏆 رتبه‌بندی درس به درس")
+
     lesson_rank = lesson_data.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
     lesson_rank['رتبه'] = lesson_rank['نمره'].rank(ascending=False, method='min').astype(int)
     lesson_rank = lesson_rank.sort_values('رتبه')
+
     st.dataframe(lesson_rank[['رتبه', 'نام دانش‌آموز', 'نمره']])
 
     st.subheader("🏅 رتبه‌بندی کلی کلاس")
+
     overall_avg = scores_long.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
     overall_avg['رتبه'] = overall_avg['نمره'].rank(ascending=False, method='min').astype(int)
     overall_avg = overall_avg.sort_values('رتبه')
+
     st.dataframe(overall_avg[['رتبه', 'نام دانش‌آموز', 'نمره']])
 def generate_pdf(student_name, scores_long, status_map, status_colors):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
+    # تنظیم فونت
     if os.path.exists("fonts/Vazir.ttf"):
         pdfmetrics.registerFont(TTFont('Vazir', 'fonts/Vazir.ttf'))
         font_name = 'Vazir'
     else:
         font_name = "Helvetica"
 
+    # عنوان کارنامه
     c.setFont(font_name, 18)
     c.drawCentredString(width / 2, height - 50, reshape(f"کارنامه دانش‌آموز {student_name}"))
 
+    # ساخت جدول نمرات
     font_size = 12
     headers = ["درس", "میانگین دانش‌آموز", "میانگین کلاس", "وضعیت"]
     rows = []
@@ -213,14 +246,18 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
             (scores_long['نام دانش‌آموز'] == student_name)
         ]
         df_class = scores_long[scores_long['درس'] == lesson]
+
         if df_student.empty:
             continue
+
         avg_student = df_student['نمره'].mean()
         avg_class = df_class['نمره'].mean()
         status = status_map.get(int(round(avg_student)), "نامشخص")
+
         row = [lesson, f"{avg_student:.2f}", f"{avg_class:.2f}", status]
         rows.append(row)
 
+    # محاسبه عرض ستون‌ها
     col_widths = []
     for i in range(len(headers)):
         max_width = pdfmetrics.stringWidth(reshape(headers[i]), font_name, font_size)
@@ -234,6 +271,7 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
     y = height - 100
     row_height = 25
 
+    # رسم هدر جدول
     c.setFont(font_name, font_size + 2)
     for i in range(len(headers)):
         x = start_x + sum(col_widths[:i])
@@ -241,6 +279,7 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
         c.drawCentredString(x + col_widths[i] / 2, y + 7, reshape(headers[i]))
     y -= row_height
 
+    # رسم ردیف‌های جدول
     c.setFont(font_name, font_size)
     for row in rows:
         for i in range(len(row)):
@@ -248,38 +287,41 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
             c.rect(x, y, col_widths[i], row_height, stroke=1, fill=0)
             c.drawCentredString(x + col_widths[i] / 2, y + 7, reshape(str(row[i])))
         y -= row_height
-
-    # نمودار خطی نمرات
+    # نمودار خطی نمرات دانش‌آموز
     df_student_all = scores_long[scores_long['نام دانش‌آموز'] == student_name]
+
     plt.figure(figsize=(6, 3))
     for lesson in df_student_all['درس'].unique():
         df_l = df_student_all[df_student_all['درس'] == lesson]
         plt.plot(df_l['هفته'], df_l['نمره'], marker='o', label=reshape(lesson))
+
     plt.title(reshape("روند نمرات دانش‌آموز"), fontsize=12)
     plt.xlabel(reshape("هفته"), fontsize=10)
     plt.ylabel(reshape("نمره"), fontsize=10)
     plt.legend()
-    line_buf = BytesIO()
     plt.tight_layout()
+
+    line_buf = BytesIO()
     plt.savefig(line_buf, format='png')
     plt.close()
     line_buf.seek(0)
+
+    # درج نمودار در PDF
     c.drawImage(ImageReader(line_buf), 50, y - 150, width=500, height=150)
 
-    # امضای برند
+    # امضای برند (بدون نام شخصی)
     c.setFont(font_name, 12)
-    c.drawCentredString(width / 2, 40, reshape("درس‌بان | همراهی هوشمند برای آموزگاران، با عشق از فاطمه سیفی‌پور 💖"))
+    c.drawCentredString(width / 2, 40, reshape("درس‌بان | همراهی هوشمند برای آموزگاران"))
 
     c.save()
     buffer.seek(0)
     return buffer
-
 # دکمه دانلود PDF
 pdf_buf = generate_pdf(selected_student, scores_long, status_map, status_colors)
+
 st.download_button(
     label="📥 دانلود کارنامه کامل با نمودار خطی",
     data=pdf_buf,
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
-
