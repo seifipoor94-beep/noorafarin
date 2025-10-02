@@ -71,10 +71,9 @@ users_df = st.session_state.users_df
 
 # if entered_role == "آموزگار":
     teacher_file = f"data/nomarat_{user_name}.csv"
-
     if os.path.exists(teacher_file):
-        scores_long = pd.read_csv(teacher_file)
-        st.success("✅ فایل نمرات قبلی شما بارگذاری شد.")
+      scores_long = pd.read_csv(teacher_file)
+      st.success("✅ فایل نمرات قبلی شما بارگذاری شد.")
         with st.expander("📤 به‌روزرسانی نمرات"):
             st.info("اگر می‌خواهید فایل جدید آپلود کنید، از این بخش استفاده کنید.")
             uploaded_file = st.file_uploader("فایل اکسل جدید:", type=["xlsx"])
@@ -295,4 +294,5 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
 
