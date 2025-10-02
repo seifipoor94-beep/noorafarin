@@ -76,9 +76,10 @@ if entered_role == "آموزگار":
         scores_long = pd.read_csv(previous_file)
         st.success("✅ فایل نمرات قبلی با موفقیت بارگذاری شد.")
     else:
-        st.warning("⚠️ تاکنون هیچ فایل نمره‌ای برای شما ذخیره نشده است.")
         scores_long = pd.DataFrame()
+        st.warning("⚠️ تاکنون هیچ فایل نمره‌ای برای شما ذخیره نشده است.")
 
+    # کشوی بروزرسانی نمرات
     with st.expander("📤 بروزرسانی نمرات کلاس"):
         uploaded_file = st.file_uploader("فایل اکسل جدید برای بروزرسانی نمرات:", type=["xlsx"])
         if uploaded_file is not None:
@@ -125,6 +126,7 @@ if entered_role == "آموزگار":
 
             scores_long.to_csv(previous_file, index=False)
             st.success("✅ نمرات جدید با موفقیت ذخیره و جایگزین شدند.")
+
 
 elif entered_role == "والد":
     teacher_name = user_info["آموزگار مربوطه"]
@@ -325,3 +327,4 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
