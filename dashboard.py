@@ -312,7 +312,7 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
     c.drawImage(ImageReader(line_buf), 50, y - 150, width=500, height=150)
 
     # امضای برند
-   c.setFont(font_name, 12)
+c.setFont(font_name, 12)
 c.drawCentredString(width / 2, 40, reshape("درس‌بان | همراهی هوشمند برای آموزگاران"))
 
     c.save()
@@ -327,6 +327,7 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
 
 
 
