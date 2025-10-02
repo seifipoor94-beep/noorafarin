@@ -69,14 +69,27 @@ users_df = st.session_state.users_df  # ✅ بازیابی فایل کاربرا
 # بازیابی فایل کاربران از session_state
 users_df = st.session_state.users_df
 
-# بارگذاری فایل نمرات بر اساس نقش کاربر
-if entered_role == "آموزگار":
-    st.subheader("📤 لطفاً فایل نمرات کلاس خود را آپلود کنید")
-    uploaded_file = st.file_uploader("فایل اکسل نمرات:", type=["xlsx"])
-    if uploaded_file is None:
-        st.warning("لطفاً فایل نمرات را آپلود کنید تا داشبورد فعال شود.")
-        st.stop()
-    xls = pd.ExcelFile(uploaded_file)
+# if entered_role == "آموزگار":
+    teacher_file = f"data/nomarat_{user_name}.csv"
+
+    if os.path.exists(teacher_file):
+        scores_long = pd.read_csv(teacher_file)
+        st.success("✅ فایل نمرات قبلی شما بارگذاری شد.")
+        with st.expander("📤 به‌روزرسانی نمرات"):
+            st.info("اگر می‌خواهید فایل جدید آپلود کنید، از این بخش استفاده کنید.")
+            uploaded_file = st.file_uploader("فایل اکسل جدید:", type=["xlsx"])
+            if uploaded_file:
+                xls = pd.ExcelFile(uploaded_file)
+                # ادامهٔ پردازش فایل اکسل و ذخیره‌سازی...
+    else:
+        st.subheader("📤 لطفاً فایل نمرات کلاس خود را آپلود کنید")
+        uploaded_file = st.file_uploader("فایل اکسل نمرات:", type=["xlsx"])
+        if uploaded_file is None:
+            st.warning("لطفاً فایل نمرات را آپلود کنید تا داشبورد فعال شود.")
+            st.stop()
+        xls = pd.ExcelFile(uploaded_file)
+        # ادامهٔ پردازش فایل اکسل و ذخیره‌سازی...
+
 
 elif entered_role == "والد":
     teacher_name = user_info["آموزگار مربوطه"]
@@ -282,3 +295,4 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
+
