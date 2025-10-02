@@ -55,7 +55,7 @@ if login_button:
 if not st.session_state.logged_in:
     st.image(
         "https://copilot.microsoft.com/th/id/BCO.4a841959-901a-4011-8a27-ee2d06c74fd7.png",
-        caption="📈 مسیر رشد دانش‌آموزان با همراهی درس‌بان | طراحی شده توسط فاطمه سیفی‌پور 💖",
+        caption="📈 مسیر رشد دانش‌آموزان با همراهی درس‌بان |طراحی شده توسط فاطمه سیفی‌پور 💖",
         use_container_width=True
     )
     st.stop()
@@ -68,87 +68,15 @@ school_name = user_info.get("مدرسه", "")
 users_df = st.session_state.users_df  # ✅ بازیابی فایل کاربران برای ادامهٔ پردازش
 # بازیابی فایل کاربران از session_state
 users_df = st.session_state.users_df
+
+# بارگذاری فایل نمرات بر اساس نقش کاربر
 if entered_role == "آموزگار":
-    teacher_file = f"data/nomarat_{user_name}.csv"
-
-    if os.path.exists(teacher_file):
-        scores_long = pd.read_csv(teacher_file)
-        st.success("✅ فایل نمرات قبلی شما بارگذاری شد.")
-
-        with st.expander("📤 به‌روزرسانی نمرات"):
-            st.info("اگر می‌خواهید فایل جدید آپلود کنید، از این بخش استفاده کنید.")
-            uploaded_file = st.file_uploader("فایل اکسل جدید:", type=["xlsx"])
-            if uploaded_file:
-                xls = pd.ExcelFile(uploaded_file)
-                all_data = []
-                for sheet_name in xls.sheet_names:
-                    df = pd.read_excel(xls, sheet_name=sheet_name)
-                    df.columns = df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
-                    if 'نام دانش آموز' in df.columns:
-                        df.rename(columns={'نام دانش آموز':'نام دانش‌آموز'}, inplace=True)
-                    elif 'نام دانش‌آموز' not in df.columns:
-                        continue
-                    rename_map = {}
-                    for col in df.columns:
-                        if "هفته" in col:
-                            if "اول" in col: rename_map[col] = "هفته اول"
-                            elif "دوم" in col: rename_map[col] = "هفته دوم"
-                            elif "سوم" in col: rename_map[col] = "هفته سوم"
-                            elif "چهارم" in col: rename_map[col] = "هفته چهارم"
-                    df.rename(columns=rename_map, inplace=True)
-                    score_columns = [col for col in df.columns if col != 'نام دانش‌آموز']
-                    df_long = df.melt(id_vars=['نام دانش‌آموز'], value_vars=score_columns,
-                                      var_name='هفته', value_name='نمره')
-                    df_long['نمره'] = pd.to_numeric(df_long['نمره'], errors='coerce')
-                    df_long = df_long.dropna(subset=['نمره'])
-                    df_long['نمره'] = df_long['نمره'].astype(int)
-                    df_long['درس'] = sheet_name
-                    all_data.append(df_long)
-
-                if all_data:
-                    scores_long = pd.concat(all_data, ignore_index=True)
-                    os.makedirs("data", exist_ok=True)
-                    scores_long.to_csv(teacher_file, index=False)
-                    st.success("✅ فایل جدید با موفقیت ذخیره شد و داشبورد به‌روزرسانی شد.")
-                else:
-                    st.error("❌ فایل جدید معتبر نیست یا داده‌ای برای ذخیره‌سازی ندارد.")
-    else:
-        st.subheader("📤 لطفاً فایل نمرات کلاس خود را آپلود کنید")
-        uploaded_file = st.file_uploader("فایل اکسل نمرات:", type=["xlsx"])
-        if uploaded_file is None:
-            st.warning("لطفاً فایل نمرات را آپلود کنید تا داشبورد فعال شود.")
-            st.stop()
-
-        xls = pd.ExcelFile(uploaded_file)
-        all_data = []
-        for sheet_name in xls.sheet_names:
-            df = pd.read_excel(xls, sheet_name=sheet_name)
-            df.columns = df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
-            if 'نام دانش آموز' in df.columns:
-                df.rename(columns={'نام دانش آموز':'نام دانش‌آموز'}, inplace=True)
-            elif 'نام دانش‌آموز' not in df.columns:
-                continue
-            rename_map = {}
-            for col in df.columns:
-                if "هفته" in col:
-                    if "اول" in col: rename_map[col] = "هفته اول"
-                    elif "دوم" in col: rename_map[col] = "هفته دوم"
-                    elif "سوم" in col: rename_map[col] = "هفته سوم"
-                    elif "چهارم" in col: rename_map[col] = "هفته چهارم"
-            df.rename(columns=rename_map, inplace=True)
-            score_columns = [col for col in df.columns if col != 'نام دانش‌آموز']
-            df_long = df.melt(id_vars=['نام دانش‌آموز'], value_vars=score_columns,
-                              var_name='هفته', value_name='نمره')
-            df_long['نمره'] = pd.to_numeric(df_long['نمره'], errors='coerce')
-            df_long = df_long.dropna(subset=['نمره'])
-            df_long['نمره'] = df_long['نمره'].astype(int)
-            df_long['درس'] = sheet_name
-            all_data.append(df_long)
-
-        scores_long = pd.concat(all_data, ignore_index=True)
-        os.makedirs("data", exist_ok=True)
-        scores_long.to_csv(teacher_file, index=False)
-        st.success("✅ فایل نمرات ذخیره شد.")
+    st.subheader("📤 لطفاً فایل نمرات کلاس خود را آپلود کنید")
+    uploaded_file = st.file_uploader("فایل اکسل نمرات:", type=["xlsx"])
+    if uploaded_file is None:
+        st.warning("لطفاً فایل نمرات را آپلود کنید تا داشبورد فعال شود.")
+        st.stop()
+    xls = pd.ExcelFile(uploaded_file)
 
 elif entered_role == "والد":
     teacher_name = user_info["آموزگار مربوطه"]
@@ -170,7 +98,36 @@ elif entered_role in ["مدیر", "معاون"]:
         st.error("❌ فایل نمرات این آموزگار یافت نشد.")
         st.stop()
     scores_long = pd.read_csv(teacher_file)
+# پردازش فایل اکسل فقط برای آموزگار
+if entered_role == "آموزگار":
+    all_data = []
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name)
+        df.columns = df.columns.str.strip().str.replace('\u200c',' ').str.replace('\xa0',' ')
+        if 'نام دانش آموز' in df.columns:
+            df.rename(columns={'نام دانش آموز':'نام دانش‌آموز'}, inplace=True)
+        elif 'نام دانش‌آموز' not in df.columns:
+            continue
+        rename_map = {}
+        for col in df.columns:
+            if "هفته" in col:
+                if "اول" in col: rename_map[col] = "هفته اول"
+                elif "دوم" in col: rename_map[col] = "هفته دوم"
+                elif "سوم" in col: rename_map[col] = "هفته سوم"
+                elif "چهارم" in col: rename_map[col] = "هفته چهارم"
+        df.rename(columns=rename_map, inplace=True)
+        score_columns = [col for col in df.columns if col != 'نام دانش‌آموز']
+        df_long = df.melt(id_vars=['نام دانش‌آموز'], value_vars=score_columns,
+                          var_name='هفته', value_name='نمره')
+        df_long['نمره'] = pd.to_numeric(df_long['نمره'], errors='coerce')
+        df_long = df_long.dropna(subset=['نمره'])
+        df_long['نمره'] = df_long['نمره'].astype(int)
+        df_long['درس'] = sheet_name
+        all_data.append(df_long)
 
+    scores_long = pd.concat(all_data, ignore_index=True)
+    # ذخیره‌سازی فایل نمرات آموزگار
+    scores_long.to_csv(f"data/nomarat_{user_name}.csv", index=False)
 # انتخاب درس و دانش‌آموز
 lessons = scores_long['درس'].unique()
 selected_lesson = st.selectbox("درس مورد نظر را انتخاب کنید:", lessons)
@@ -183,8 +140,6 @@ else:
     selected_student = st.selectbox("دانش‌آموز را انتخاب کنید:", students)
 
 student_data = lesson_data[lesson_data['نام دانش‌آموز'] == selected_student]
-
-
 
 # وضعیت کیفی
 status_map = {1: "نیاز به تلاش بیشتر", 2: "قابل قبول", 3: "خوب", 4: "خیلی خوب"}
@@ -221,6 +176,19 @@ if not student_data.empty:
     fig_line.update_traces(line_color='orange')
     st.plotly_chart(fig_line, use_container_width=True)
 
+# رتبه‌بندی درس به درس
+if entered_role in ["مدیر", "معاون", "آموزگار"]:
+    st.subheader("🏆 رتبه‌بندی درس به درس")
+    lesson_rank = lesson_data.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
+    lesson_rank['رتبه'] = lesson_rank['نمره'].rank(ascending=False, method='min').astype(int)
+    lesson_rank = lesson_rank.sort_values('رتبه')
+    st.dataframe(lesson_rank[['رتبه', 'نام دانش‌آموز', 'نمره']])
+
+    st.subheader("🏅 رتبه‌بندی کلی کلاس")
+    overall_avg = scores_long.groupby('نام دانش‌آموز')['نمره'].mean().reset_index()
+    overall_avg['رتبه'] = overall_avg['نمره'].rank(ascending=False, method='min').astype(int)
+    overall_avg = overall_avg.sort_values('رتبه')
+    st.dataframe(overall_avg[['رتبه', 'نام دانش‌آموز', 'نمره']])
 def generate_pdf(student_name, scores_long, status_map, status_colors):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
@@ -298,6 +266,20 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
     line_buf.seek(0)
     c.drawImage(ImageReader(line_buf), 50, y - 150, width=500, height=150)
 
+    # امضای برند
+    c.setFont(font_name, 12)
+    c.drawCentredString(width / 2, 40, reshape("درس‌بان | همراهی هوشمند برای آموزگاران، با عشق از فاطمه سیفی‌پور 💖"))
+
     c.save()
     buffer.seek(0)
     return buffer
+
+# دکمه دانلود PDF
+pdf_buf = generate_pdf(selected_student, scores_long, status_map, status_colors)
+st.download_button(
+    label="📥 دانلود کارنامه کامل با نمودار خطی",
+    data=pdf_buf,
+    file_name=f"کارنامه_{selected_student}.pdf",
+    mime="application/pdf"
+)
+
