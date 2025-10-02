@@ -313,7 +313,7 @@ def generate_pdf(student_name, scores_long, status_map, status_colors):
 
     # امضای برند
     c.setFont(font_name, 12)
-    c.drawCentredString(width / 2, 40, reshape("درس‌بان | همراهی هوشمند برای آموزگاران  💖"))
+    c.drawCentredString(width / 2, 40, reshape("درس‌بان | همراهی هوشمند برای آموزگاران، با عشق از فاطمه سیفی‌پور 💖"))
 
     c.save()
     buffer.seek(0)
@@ -327,11 +327,3 @@ st.download_button(
     file_name=f"کارنامه_{selected_student}.pdf",
     mime="application/pdf"
 )
-  
-
-
-
-
-
-
-
